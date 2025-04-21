@@ -32,15 +32,6 @@
     #lessonSection {
       display: none;
     }
-    #videoSection {
-      margin-top: 2rem;
-    }
-    iframe {
-      width: 100%;
-      max-width: 560px;
-      height: 315px;
-      border: none;
-    }
   </style>
 </head>
 <body>
@@ -69,20 +60,15 @@
         <button onclick="toggle('japanese')">🇯🇵 日本語 表示/非表示</button>
       </div>
     </div>
-
-    <div id="videoSection">
-      <h3>🎬 実際の会話映像（Youglish風）</h3>
-      <iframe id="youtubeFrame" src="https://www.youtube.com/embed/6ZLZWHssv7Y?start=5" allowfullscreen></iframe>
-    </div>
   </div>
 
   <audio id="beep" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
 
   <script>
     const lessonData = [
-      { en: "I play the piano.", ja: "私はピアノを弾きます。", video: "6ZLZWHssv7Y", start: 5 },
-      { en: "You play the guitar.", ja: "あなたはギターを弾きます。", video: "xgO1b0C9y1g", start: 10 },
-      { en: "I play soccer.", ja: "私はサッカーをします。", video: "gHkQvNeWzvU", start: 15 }
+      { en: "I play the piano.", ja: "私はピアノを弾きます。" },
+      { en: "You play the guitar.", ja: "あなたはギターを弾きます。" },
+      { en: "I play soccer.", ja: "私はサッカーをします。" }
     ];
 
     let currentIndex = 0;
@@ -107,11 +93,8 @@
     function showSentence() {
       const english = document.getElementById('englishText');
       const japanese = document.getElementById('japaneseText');
-      const frame = document.getElementById('youtubeFrame');
       english.textContent = lessonData[currentIndex].en;
       japanese.textContent = lessonData[currentIndex].ja;
-      const { video, start } = lessonData[currentIndex];
-      frame.src = `https://www.youtube.com/embed/${video}?start=${start}&autoplay=0`;
     }
 
     function nextSentence() {
@@ -141,9 +124,11 @@
       utterance.lang = 'en-US';
 
       const speakWithCheck = () => {
-        if (speechSynthesis.getVoices().length === 0) {
+        const voices = speechSynthesis.getVoices();
+        if (voices.length === 0) {
           setTimeout(speakWithCheck, 100);
         } else {
+          utterance.voice = voices.find(v => v.lang.startsWith('en')) || null;
           speechSynthesis.speak(utterance);
         }
       };
