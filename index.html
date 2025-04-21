@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>英会話レッスン（プロトタイプ）</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 2rem;
+    }
+    .lesson-line {
+      margin: 1rem 0;
+      font-size: 1.5rem;
+    }
+    .english, .japanese {
+      display: block;
+      margin: 0.5rem 0;
+    }
+    .controls, .lesson-content {
+      margin-top: 2rem;
+    }
+    .button-row {
+      margin: 1rem 0;
+    }
+    button {
+      margin: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      font-size: 1.2rem;
+    }
+    #lessonSection {
+      display: none;
+    }
+    #videoSection {
+      margin-top: 2rem;
+    }
+    iframe {
+      width: 100%;
+      max-width: 560px;
+      height: 315px;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎓 英会話レッスン</h1>
+
+  <div id="menuSection">
+    <button onclick="startLesson()">▶️ レッスン開始</button>
+  </div>
+
+  <div id="lessonSection">
+    <h2>🎹 レッスン：SVOユニット</h2>
+
+    <div class="lesson-line">
+      <span class="english" id="englishText">I play the piano.</span>
+      <span class="japanese" id="japaneseText">私はピアノを弾きます。</span>
+    </div>
+
+    <div class="controls">
+      <div class="button-row">
+        <button onclick="prevSentence()">⏮️ 戻る</button>
+        <button onclick="repeatSentence()">🔁 リピート</button>
+        <button onclick="nextSentence()">⏭️ 次へ</button>
+      </div>
+      <div class="button-row">
+        <button onclick="toggle('english')">🇬🇧 英語 表示/非表示</button>
+        <button onclick="toggle('japanese')">🇯🇵 日本語 表示/非表示</button>
+      </div>
+    </div>
+
+    <div id="videoSection">
+      <h3>🎬 実際の会話映像（Youglish風）</h3>
+      <iframe id="youtubeFrame" src="https://www.youtube.com/embed/6ZLZWHssv7Y?start=5" allowfullscreen></iframe>
+    </div>
+  </div>
+
+  <audio id="beep" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+
+  <script>
+    const lessonData = [
+      { en: "I play the piano.", ja: "私はピアノを弾きます。", video: "6ZLZWHssv7Y", start: 5 },
+      { en: "You play the guitar.", ja: "あなたはギターを弾きます。", video: "xgO1b0C9y1g", start: 10 },
+      { en: "I play soccer.", ja: "私はサッカーをします。", video: "gHkQvNeWzvU", start: 15 }
+    ];
+
+    let currentIndex = 0;
+
+    // マイクアクセス確認
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(() => console.log("🎤 マイク使用OK"))
+      .catch(err => alert("❌ マイクの使用が許可されていません: " + err));
+
+    function toggle(className) {
+      const el = document.querySelector(`#${className}Text`);
+      el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+    }
+
+    function startLesson() {
+      document.getElementById('menuSection').style.display = 'none';
+      document.getElementById('lessonSection').style.display = 'block';
+      showSentence();
+      playLesson();
+    }
+
+    function showSentence() {
+      const english = document.getElementById('englishText');
+      const japanese = document.getElementById('japaneseText');
+      const frame = document.getElementById('youtubeFrame');
+      english.textContent = lessonData[currentIndex].en;
+      japanese.textContent = lessonData[currentIndex].ja;
+      const { video, start } = lessonData[currentIndex];
+      frame.src = `https://www.youtube.com/embed/${video}?start=${start}&autoplay=0`;
+    }
+
+    function nextSentence() {
+      if (currentIndex < lessonData.length - 1) {
+        currentIndex++;
+        showSentence();
+        playLesson();
+      }
+    }
+
+    function prevSentence() {
+      if (currentIndex > 0) {
+        currentIndex--;
+        showSentence();
+        playLesson();
+      }
+    }
+
+    function repeatSentence() {
+      showSentence();
+      playLesson();
+    }
+
+    function playLesson() {
+      const sentence = lessonData[currentIndex].en;
+      const utterance = new SpeechSynthesisUtterance(sentence);
+      utterance.lang = 'en-US';
+
+      const speakWithCheck = () => {
+        if (speechSynthesis.getVoices().length === 0) {
+          setTimeout(speakWithCheck, 100);
+        } else {
+          speechSynthesis.speak(utterance);
+        }
+      };
+
+      speakWithCheck();
+
+      utterance.onend = () => {
+        document.getElementById("beep").play();
+        listenForSpeech(sentence);
+      };
+    }
+
+    function listenForSpeech(expectedText) {
+      if (!('webkitSpeechRecognition' in window)) return;
+      const recognition = new webkitSpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.start();
+
+      recognition.onresult = function(event) {
+        const userSpeech = event.results[0][0].transcript.trim().toLowerCase();
+        const expected = expectedText.trim().toLowerCase();
+        if (userSpeech === expected) {
+          setTimeout(() => nextSentence(), 1000);
+        }
+      };
+
+      recognition.onerror = function() {
+        console.log("認識エラー");
+      };
+    }
+  </script>
+</body>
+</html>
