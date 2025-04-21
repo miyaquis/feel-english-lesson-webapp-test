@@ -1,10 +1,39 @@
-<button onclick="speakNow()">Click me to speak</button>
-<script>
-function speakNow() {
-  const u = new SpeechSynthesisUtterance("This is GitHub Pages test.");
-  u.onstart = () => console.log("🟢 開始");
-  u.onend = () => console.log("🔵 終了");
-  u.onerror = (e) => console.error("🔴 エラー", e.error);
-  speechSynthesis.speak(u);
-}
-</script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>音声テスト</title>
+</head>
+<body>
+  <h1>✅ 音声読み上げテスト</h1>
+  <button id="speakBtn">▶️ 話す</button>
+
+  <script>
+    document.getElementById('speakBtn').addEventListener('click', () => {
+      const u = new SpeechSynthesisUtterance("Hello! This is a test from GitHub Pages.");
+      const voices = speechSynthesis.getVoices();
+      console.log("voices loaded:", voices.length);
+
+      // 英語の音声を選ぶ（なければnull）
+      u.voice = voices.find(v => v.lang.startsWith('en')) || null;
+      u.lang = 'en-US';
+      u.rate = 1;
+      u.pitch = 1;
+      u.volume = 1;
+
+      u.onstart = () => console.log("🟢 音声開始");
+      u.onend = () => console.log("🔵 音声終了");
+      u.onerror = (e) => console.error("🔴 音声エラー", e.error);
+
+      speechSynthesis.speak(u);
+    });
+
+    // 強制的にvoice読み込みを待つ
+    if (speechSynthesis.getVoices().length === 0) {
+      speechSynthesis.onvoiceschanged = () => {
+        console.log("🔁 voices changed (読み込み完了)");
+      };
+    }
+  </script>
+</body>
+</html>
