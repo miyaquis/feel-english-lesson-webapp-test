@@ -72,6 +72,12 @@
     ];
 
     let currentIndex = 0;
+    let voicesReady = false;
+
+    // 音声準備完了を検知
+    speechSynthesis.onvoiceschanged = () => {
+      voicesReady = true;
+    };
 
     // マイクアクセス確認
     navigator.mediaDevices.getUserMedia({ audio: true })
@@ -87,7 +93,7 @@
       document.getElementById('menuSection').style.display = 'none';
       document.getElementById('lessonSection').style.display = 'block';
       showSentence();
-      playLesson();
+      waitAndPlayLesson();
     }
 
     function showSentence() {
@@ -101,7 +107,7 @@
       if (currentIndex < lessonData.length - 1) {
         currentIndex++;
         showSentence();
-        playLesson();
+        waitAndPlayLesson();
       }
     }
 
@@ -109,31 +115,31 @@
       if (currentIndex > 0) {
         currentIndex--;
         showSentence();
-        playLesson();
+        waitAndPlayLesson();
       }
     }
 
     function repeatSentence() {
       showSentence();
-      playLesson();
+      waitAndPlayLesson();
+    }
+
+    function waitAndPlayLesson() {
+      if (voicesReady) {
+        playLesson();
+      } else {
+        setTimeout(waitAndPlayLesson, 100);
+      }
     }
 
     function playLesson() {
       const sentence = lessonData[currentIndex].en;
       const utterance = new SpeechSynthesisUtterance(sentence);
       utterance.lang = 'en-US';
+      const voices = speechSynthesis.getVoices();
+      utterance.voice = voices.find(v => v.lang.startsWith('en')) || null;
 
-      const speakWithCheck = () => {
-        const voices = speechSynthesis.getVoices();
-        if (voices.length === 0) {
-          setTimeout(speakWithCheck, 100);
-        } else {
-          utterance.voice = voices.find(v => v.lang.startsWith('en')) || null;
-          speechSynthesis.speak(utterance);
-        }
-      };
-
-      speakWithCheck();
+      speechSynthesis.speak(utterance);
 
       utterance.onend = () => {
         document.getElementById("beep").play();
